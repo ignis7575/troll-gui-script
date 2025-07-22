@@ -1,172 +1,248 @@
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-local StarterGui = game:GetService("StarterGui")
 
--- GUI setup
+-- Variables
+local LocalPlayer = Players.LocalPlayer
+local TargetPlayer = nil
+local FollowConnection = nil
+local FlingRunning = false
+
+-- Create GUI
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 ScreenGui.Name = "TrollGui"
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 250, 0, 300)
-MainFrame.Position = UDim2.new(0.05, 0, 0.1, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 300, 0, 350)
+MainFrame.Position = UDim2.new(0.1, 0, 0.1, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 MainFrame.BorderSizePixel = 0
-MainFrame.Parent = ScreenGui
 MainFrame.Active = true
 MainFrame.Draggable = true
 
-local ScrollingFrame = Instance.new("ScrollingFrame", MainFrame)
-ScrollingFrame.Size = UDim2.new(1, 0, 1, 0)
-ScrollingFrame.CanvasSize = UDim2.new(0, 0, 2, 0)
-ScrollingFrame.ScrollBarThickness = 6
-ScrollingFrame.BackgroundTransparency = 1
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1,0,0,30)
+Title.BackgroundTransparency = 1
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 20
+Title.Text = "Trolling GUI"
 
--- Button function helper
-local function createButton(text, func)
-	local button = Instance.new("TextButton")
-	button.Size = UDim2.new(1, -10, 0, 30)
-	button.Position = UDim2.new(0, 5, 0, #ScrollingFrame:GetChildren() * 35)
-	button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	button.TextColor3 = Color3.new(1,1,1)
-	button.Font = Enum.Font.SourceSansBold
-	button.TextSize = 18
-	button.Text = text
-	button.Parent = ScrollingFrame
-	button.MouseButton1Click:Connect(func)
+-- Target input
+local TargetBoxLabel = Instance.new("TextLabel", MainFrame)
+TargetBoxLabel.Size = UDim2.new(0.5, -10, 0, 25)
+TargetBoxLabel.Position = UDim2.new(0,10,0,40)
+TargetBoxLabel.BackgroundTransparency = 1
+TargetBoxLabel.TextColor3 = Color3.new(1,1,1)
+TargetBoxLabel.Font = Enum.Font.SourceSans
+TargetBoxLabel.TextSize = 16
+TargetBoxLabel.Text = "Target Player:"
+
+local TargetBox = Instance.new("TextBox", MainFrame)
+TargetBox.Size = UDim2.new(0.45, 0, 0, 25)
+TargetBox.Position = UDim2.new(0.5, 0, 0, 40)
+TargetBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
+TargetBox.TextColor3 = Color3.new(1,1,1)
+TargetBox.Font = Enum.Font.SourceSans
+TargetBox.TextSize = 16
+TargetBox.ClearTextOnFocus = false
+TargetBox.PlaceholderText = "Partial name"
+
+local function findPlayerByPartialName(part)
+    part = part:lower()
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr.Name:lower():find(part) then
+            return plr
+        end
+    end
+    return nil
 end
 
--- Invisibility
-local invisActive = false
-local function invis()
-	local char = LocalPlayer.Character
-	if not char then return end
-	invisActive = true
-	for _, part in pairs(char:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.Transparency = 1
-		elseif part:IsA("Decal") then
-			part.Transparency = 1
-		end
-	end
-	local hum = char:FindFirstChildOfClass("Humanoid")
-	if hum then hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
-end
-
--- Fling all
-local flingActive = false
-local function flingAll()
-	local char = LocalPlayer.Character
-	if not char then return end
-	local hrp = char:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
-	flingActive = true
-	task.spawn(function()
-		while flingActive do
-			for _, player in pairs(Players:GetPlayers()) do
-				if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-					hrp.CFrame = player.Character.HumanoidRootPart.CFrame + Vector3.new(0,2,0)
-					task.wait(0.1)
-				end
-			end
-		end
-	end)
-end
-
--- ESP
-local espActive = false
-local espList = {}
-local function toggleESP()
-	espActive = not espActive
-	if espActive then
-		for _, plr in pairs(Players:GetPlayers()) do
-			if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
-				local bill = Instance.new("BillboardGui", plr.Character.Head)
-				bill.Name = "ESPTag"
-				bill.Size = UDim2.new(0, 100, 0, 20)
-				bill.StudsOffset = Vector3.new(0, 3, 0)
-				bill.AlwaysOnTop = true
-				local label = Instance.new("TextLabel", bill)
-				label.Text = plr.Name
-				label.TextColor3 = Color3.new(1, 0, 0)
-				label.TextStrokeTransparency = 0
-				label.BackgroundTransparency = 1
-				label.Size = UDim2.new(1, 0, 1, 0)
-			end
-		end
-	else
-		for _, plr in pairs(Players:GetPlayers()) do
-			if plr.Character and plr.Character:FindFirstChild("Head") then
-				local esp = plr.Character.Head:FindFirstChild("ESPTag")
-				if esp then esp:Destroy() end
-			end
-		end
-	end
-end
-
--- Noclip
-local noclip = false
-RunService.Stepped:Connect(function()
-	if noclip and LocalPlayer.Character then
-		for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.CanCollide = false
-			end
-		end
-	end
+TargetBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        local plr = findPlayerByPartialName(TargetBox.Text)
+        if plr then
+            TargetPlayer = plr
+            TargetBox.Text = plr.Name
+            print("Target set to "..plr.Name)
+        else
+            TargetPlayer = nil
+            print("No player found with name containing: "..TargetBox.Text)
+        end
+    end
 end)
 
--- Teleport
-local function tpToPlayer()
-	local name = game:GetService("StarterGui"):PromptInput("Enter partial username:")
-	if not name or name == "" then return end
-	for _, plr in pairs(Players:GetPlayers()) do
-		if plr.Name:lower():sub(1, #name) == name:lower() and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-			LocalPlayer.Character:MoveTo(plr.Character.HumanoidRootPart.Position + Vector3.new(0, 3, 0))
-			break
-		end
-	end
+-- Buttons helper
+local function createButton(text, yPos, callback)
+    local btn = Instance.new("TextButton", MainFrame)
+    btn.Size = UDim2.new(0.9, 0, 0, 30)
+    btn.Position = UDim2.new(0.05, 0, 0, yPos)
+    btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 18
+    btn.Text = text
+    btn.MouseButton1Click:Connect(callback)
+    return btn
 end
 
-local function tpAllToMe()
-	local char = LocalPlayer.Character
-	if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-	for _, plr in pairs(Players:GetPlayers()) do
-		if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-			plr.Character.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame + Vector3.new(math.random(-5,5), 2, math.random(-5,5))
-		end
-	end
-end
+-- Teleport to target
+createButton("Teleport To Target", 80, function()
+    if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = TargetPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(2,0,0)
+    else
+        warn("Cannot teleport: Target or your character missing")
+    end
+end)
 
--- Stop All
-local function stopAll()
-	invisActive = false
-	flingActive = false
-	noclip = false
-	toggleESP() -- call once to disable
-	toggleESP() -- reset to off state
-	local char = LocalPlayer.Character
-	if not char then return end
-	for _, part in pairs(char:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.Transparency = 0
-			part.CanCollide = true
-		elseif part:IsA("Decal") then
-			part.Transparency = 0
-		end
-	end
-	local hum = char:FindFirstChildOfClass("Humanoid")
-	if hum then
-		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer
-	end
-end
+-- Fling target
+createButton("Start Fling Target", 120, function()
+    if not TargetPlayer or not TargetPlayer.Character or not TargetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        warn("No valid target for fling")
+        return
+    end
+    if FlingRunning then
+        warn("Fling already running")
+        return
+    end
+    FlingRunning = true
+    local targetHRP = TargetPlayer.Character.HumanoidRootPart
+    local plrHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not plrHRP then
+        warn("Your HumanoidRootPart not found")
+        FlingRunning = false
+        return
+    end
+    spawn(function()
+        while FlingRunning and TargetPlayer and TargetPlayer.Character and targetHRP.Parent do
+            plrHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 0)
+            plrHRP.Velocity = Vector3.new(0,50,0)
+            wait(0.1)
+        end
+    end)
+end)
 
--- Buttons
-createButton("Invisibility", invis)
-createButton("Fling All", flingAll)
-createButton("ESP Toggle", toggleESP)
-createButton("Noclip Toggle", function() noclip = not noclip end)
-createButton("TP to Player", tpToPlayer)
-createButton("TP All to Me", tpAllToMe)
-createButton("Stop All", stopAll)
+createButton("Stop Fling", 160, function()
+    FlingRunning = false
+end)
+
+-- Follow target
+createButton("Follow Target", 200, function()
+    if FollowConnection then
+        FollowConnection:Disconnect()
+        FollowConnection = nil
+        print("Stopped following")
+        return
+    end
+    if not TargetPlayer or not TargetPlayer.Character or not TargetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        warn("No valid target to follow")
+        return
+    end
+    local plrHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not plrHRP then
+        warn("Your HumanoidRootPart not found")
+        return
+    end
+
+    FollowConnection = RunService.Heartbeat:Connect(function()
+        if not TargetPlayer or not TargetPlayer.Character or not TargetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            FollowConnection:Disconnect()
+            FollowConnection = nil
+            print("Target lost, stopped following")
+            return
+        end
+        plrHRP.CFrame = TargetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(2,0,0)
+    end)
+    print("Started following "..TargetPlayer.Name)
+end)
+
+-- Follow random player
+createButton("Follow Random Player", 240, function()
+    local plrs = Players:GetPlayers()
+    if #plrs < 2 then
+        warn("Not enough players to follow random")
+        return
+    end
+    local candidates = {}
+    for _, p in pairs(plrs) do
+        if p ~= LocalPlayer then
+            table.insert(candidates, p)
+        end
+    end
+    if #candidates == 0 then
+        warn("No players to follow")
+        return
+    end
+    TargetPlayer = candidates[math.random(1, #candidates)]
+    TargetBox.Text = TargetPlayer.Name
+    print("Randomly selected target: "..TargetPlayer.Name)
+
+    -- Start following them (reuse follow target button code)
+    if FollowConnection then
+        FollowConnection:Disconnect()
+        FollowConnection = nil
+    end
+    local plrHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not plrHRP then
+        warn("Your HumanoidRootPart not found")
+        return
+    end
+    FollowConnection = RunService.Heartbeat:Connect(function()
+        if not TargetPlayer or not TargetPlayer.Character or not TargetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            FollowConnection:Disconnect()
+            FollowConnection = nil
+            print("Target lost, stopped following")
+            return
+        end
+        plrHRP.CFrame = TargetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(2,0,0)
+    end)
+    print("Started following "..TargetPlayer.Name)
+end)
+
+-- Troll target (example multiple troll effects)
+createButton("Troll Target (Multi)", 280, function()
+    if not TargetPlayer or not TargetPlayer.Character then
+        warn("No valid target for trolling")
+        return
+    end
+
+    local hrp = TargetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local humanoid = TargetPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if not hrp or not humanoid then
+        warn("Target missing required parts")
+        return
+    end
+
+    -- Example trolls:
+
+    -- 1. Spin target rapidly
+    coroutine.wrap(function()
+        for i=1,30 do
+            if not TargetPlayer or not TargetPlayer.Character then break end
+            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(30), 0)
+            wait(0.1)
+        end
+    end)()
+
+    -- 2. Change WalkSpeed repeatedly
+    coroutine.wrap(function()
+        for i=1,10 do
+            if not humanoid then break end
+            humanoid.WalkSpeed = math.random(50,150)
+            wait(0.5)
+        end
+        if humanoid then
+            humanoid.WalkSpeed = 16
+        end
+    end)()
+
+    -- 3. Random teleport nearby
+    coroutine.wrap(function()
+        for i=1,10 do
+            if not hrp then break end
+            local offset = Vector3.new(math.random(-10,10),0,math.random(-10,10))
+            hrp.CFrame = hrp.CFrame + offset
+            wait(0.4)
+        end
+    end)()
+end)
