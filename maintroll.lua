@@ -8,6 +8,17 @@ local TargetPlayer = nil
 local FollowConnection = nil
 local FlingRunning = false
 
+-- Helper to find player by partial name (case-insensitive)
+local function findPlayerByPartialName(part)
+    part = part:lower()
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr.Name:lower():find(part) then
+            return plr
+        end
+    end
+    return nil
+end
+
 -- Create GUI
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 ScreenGui.Name = "TrollGui"
@@ -28,7 +39,7 @@ Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 20
 Title.Text = "Trolling GUI"
 
--- Target input
+-- Target input label and box
 local TargetBoxLabel = Instance.new("TextLabel", MainFrame)
 TargetBoxLabel.Size = UDim2.new(0.5, -10, 0, 25)
 TargetBoxLabel.Position = UDim2.new(0,10,0,40)
@@ -48,16 +59,6 @@ TargetBox.TextSize = 16
 TargetBox.ClearTextOnFocus = false
 TargetBox.PlaceholderText = "Partial name"
 
-local function findPlayerByPartialName(part)
-    part = part:lower()
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr.Name:lower():find(part) then
-            return plr
-        end
-    end
-    return nil
-end
-
 TargetBox.FocusLost:Connect(function(enterPressed)
     if enterPressed then
         local plr = findPlayerByPartialName(TargetBox.Text)
@@ -67,12 +68,12 @@ TargetBox.FocusLost:Connect(function(enterPressed)
             print("Target set to "..plr.Name)
         else
             TargetPlayer = nil
-            print("No player found with name containing: "..TargetBox.Text)
+            warn("No player found with name containing: "..TargetBox.Text)
         end
     end
 end)
 
--- Buttons helper
+-- Button helper function
 local function createButton(text, yPos, callback)
     local btn = Instance.new("TextButton", MainFrame)
     btn.Size = UDim2.new(0.9, 0, 0, 30)
@@ -88,14 +89,15 @@ end
 
 -- Teleport to target
 createButton("Teleport To Target", 80, function()
-    if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+    if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         LocalPlayer.Character.HumanoidRootPart.CFrame = TargetPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(2,0,0)
     else
         warn("Cannot teleport: Target or your character missing")
     end
 end)
 
--- Fling target
+-- Fling target control
 createButton("Start Fling Target", 120, function()
     if not TargetPlayer or not TargetPlayer.Character or not TargetPlayer.Character:FindFirstChild("HumanoidRootPart") then
         warn("No valid target for fling")
@@ -126,8 +128,8 @@ createButton("Stop Fling", 160, function()
     FlingRunning = false
 end)
 
--- Follow target
-createButton("Follow Target", 200, function()
+-- Follow target toggle
+createButton("Toggle Follow Target", 200, function()
     if FollowConnection then
         FollowConnection:Disconnect()
         FollowConnection = nil
@@ -156,7 +158,7 @@ createButton("Follow Target", 200, function()
     print("Started following "..TargetPlayer.Name)
 end)
 
--- Follow random player
+-- Follow random player button
 createButton("Follow Random Player", 240, function()
     local plrs = Players:GetPlayers()
     if #plrs < 2 then
@@ -177,7 +179,6 @@ createButton("Follow Random Player", 240, function()
     TargetBox.Text = TargetPlayer.Name
     print("Randomly selected target: "..TargetPlayer.Name)
 
-    -- Start following them (reuse follow target button code)
     if FollowConnection then
         FollowConnection:Disconnect()
         FollowConnection = nil
@@ -199,7 +200,7 @@ createButton("Follow Random Player", 240, function()
     print("Started following "..TargetPlayer.Name)
 end)
 
--- Troll target (example multiple troll effects)
+-- Troll target multi-effect button
 createButton("Troll Target (Multi)", 280, function()
     if not TargetPlayer or not TargetPlayer.Character then
         warn("No valid target for trolling")
@@ -213,9 +214,7 @@ createButton("Troll Target (Multi)", 280, function()
         return
     end
 
-    -- Example trolls:
-
-    -- 1. Spin target rapidly
+    -- Spin target rapidly
     coroutine.wrap(function()
         for i=1,30 do
             if not TargetPlayer or not TargetPlayer.Character then break end
@@ -224,7 +223,7 @@ createButton("Troll Target (Multi)", 280, function()
         end
     end)()
 
-    -- 2. Change WalkSpeed repeatedly
+    -- Change WalkSpeed repeatedly
     coroutine.wrap(function()
         for i=1,10 do
             if not humanoid then break end
@@ -236,7 +235,7 @@ createButton("Troll Target (Multi)", 280, function()
         end
     end)()
 
-    -- 3. Random teleport nearby
+    -- Random teleport nearby
     coroutine.wrap(function()
         for i=1,10 do
             if not hrp then break end
