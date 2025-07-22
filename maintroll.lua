@@ -105,49 +105,52 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- GUI Creation
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CoolkidTrollGUI"
+ScreenGui.Parent = game:GetService("CoreGui") -- Use CoreGui for guaranteed display
 
-local MainFrame = Instance.new("Frame", ScreenGui)
+local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 350, 0, 450)
 MainFrame.Position = UDim2.new(0.2, 0, 0.2, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
 
-local Title = Instance.new("TextLabel", MainFrame)
+local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1,0,0,30)
 Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.new(1,1,1)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 24
 Title.Text = "Coolkid Style Troll GUI + Aimbot"
+Title.Parent = MainFrame
 
--- Scrolling frame for buttons (optional for more buttons)
-local ScrollFrame = Instance.new("ScrollingFrame", MainFrame)
+local ScrollFrame = Instance.new("ScrollingFrame")
 ScrollFrame.Size = UDim2.new(1, -20, 1, -50)
 ScrollFrame.Position = UDim2.new(0,10,0,40)
 ScrollFrame.CanvasSize = UDim2.new(0,0,5,0)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.BorderSizePixel = 0
 ScrollFrame.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
+ScrollFrame.Parent = MainFrame
 
--- Layout inside ScrollFrame
-local UIListLayout = Instance.new("UIListLayout", ScrollFrame)
+local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.Parent = ScrollFrame
 
--- Target input label and box
-local TargetBoxLabel = Instance.new("TextLabel", ScrollFrame)
+local TargetBoxLabel = Instance.new("TextLabel")
 TargetBoxLabel.Size = UDim2.new(1,0,0,20)
 TargetBoxLabel.BackgroundTransparency = 1
 TargetBoxLabel.TextColor3 = Color3.new(1,1,1)
 TargetBoxLabel.Font = Enum.Font.SourceSans
 TargetBoxLabel.TextSize = 16
 TargetBoxLabel.Text = "Target Player (partial name):"
+TargetBoxLabel.Parent = ScrollFrame
 
-local TargetBox = Instance.new("TextBox", ScrollFrame)
+local TargetBox = Instance.new("TextBox")
 TargetBox.Size = UDim2.new(1,0,0,30)
 TargetBox.BackgroundColor3 = Color3.fromRGB(40,40,40)
 TargetBox.TextColor3 = Color3.new(1,1,1)
@@ -155,6 +158,7 @@ TargetBox.Font = Enum.Font.SourceSans
 TargetBox.TextSize = 18
 TargetBox.ClearTextOnFocus = false
 TargetBox.PlaceholderText = "Type and press Enter"
+TargetBox.Parent = ScrollFrame
 
 TargetBox.FocusLost:Connect(function(enterPressed)
     if enterPressed then
@@ -170,9 +174,8 @@ TargetBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
--- Button creator helper
 local function createButton(text, parent, callback)
-    local btn = Instance.new("TextButton", parent)
+    local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1,0,0,30)
     btn.BackgroundColor3 = Color3.fromRGB(55,55,55)
     btn.TextColor3 = Color3.new(1,1,1)
@@ -181,10 +184,10 @@ local function createButton(text, parent, callback)
     btn.Text = text
     btn.AutoButtonColor = true
     btn.MouseButton1Click:Connect(callback)
+    btn.Parent = parent
     return btn
 end
 
--- Teleport to target
 createButton("Teleport To Target", ScrollFrame, function()
     if TargetPlayer and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart")
     and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -194,7 +197,6 @@ createButton("Teleport To Target", ScrollFrame, function()
     end
 end)
 
--- Fling target improved
 createButton("Start Fling Target", ScrollFrame, function()
     if not TargetPlayer or not TargetPlayer.Character or not TargetPlayer.Character:FindFirstChild("HumanoidRootPart") then
         warn("No valid target for fling")
@@ -226,7 +228,6 @@ createButton("Stop Fling", ScrollFrame, function()
     FlingRunning = false
 end)
 
--- Follow target toggle
 createButton("Toggle Follow Target", ScrollFrame, function()
     if FollowConnection then
         FollowConnection:Disconnect()
@@ -256,13 +257,11 @@ createButton("Toggle Follow Target", ScrollFrame, function()
     print("Started following "..TargetPlayer.Name)
 end)
 
--- Noclip toggle
 createButton("Toggle Noclip", ScrollFrame, function()
     NoclipEnabled = not NoclipEnabled
     print("Noclip is now", NoclipEnabled and "ON" or "OFF")
 end)
 
--- Noclip logic
 RunService.Stepped:Connect(function()
     if NoclipEnabled and LocalPlayer.Character then
         for _, part in pairs(LocalPlayer.Character:GetChildren()) do
@@ -273,7 +272,6 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- ESP implementation
 local function createESPForPlayer(plr)
     if ESPBoxes[plr] then return end
     local box = Instance.new("BoxHandleAdornment")
@@ -329,7 +327,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Chat trolling (spamming fake messages)
 local ChatSpamRunning = false
 local ChatSpamMessages = {
     "You got trolled!",
@@ -356,3 +353,7 @@ createButton("Toggle Chat Spam", ScrollFrame, function()
             end
             wait(2)
         end
+    end)
+end)
+
+print("Coolkid Style Troll GUI Loaded! Right-click to toggle aimbot.")
