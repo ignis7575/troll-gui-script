@@ -97,7 +97,7 @@ createButton("Teleport To Target", 80, function()
     end
 end)
 
--- Fling target control
+-- Improved fling target control
 createButton("Start Fling Target", 120, function()
     if not TargetPlayer or not TargetPlayer.Character or not TargetPlayer.Character:FindFirstChild("HumanoidRootPart") then
         warn("No valid target for fling")
@@ -107,19 +107,22 @@ createButton("Start Fling Target", 120, function()
         warn("Fling already running")
         return
     end
-    FlingRunning = true
-    local targetHRP = TargetPlayer.Character.HumanoidRootPart
     local plrHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not plrHRP then
         warn("Your HumanoidRootPart not found")
-        FlingRunning = false
         return
     end
+
+    local targetHRP = TargetPlayer.Character.HumanoidRootPart
+    FlingRunning = true
+
     spawn(function()
-        while FlingRunning and TargetPlayer and TargetPlayer.Character and targetHRP.Parent do
-            plrHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 0)
-            plrHRP.Velocity = Vector3.new(0,50,0)
-            wait(0.1)
+        while FlingRunning and TargetPlayer and TargetPlayer.Character and targetHRP.Parent and plrHRP.Parent do
+            -- Teleport your HRP into the target's HRP with slight offset to collide
+            plrHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 1)
+            -- Give a sudden velocity upwards to initiate fling physics
+            plrHRP.Velocity = Vector3.new(0, 100, 0)
+            wait(0.05)
         end
     end)
 end)
